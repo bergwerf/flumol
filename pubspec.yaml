@@ -1,0 +1,8 @@
+name:         logicboard
+version:      0.0.0
+author:       Herman Bergwerf <hermanbergwerf@gmail.com>
+description:  The LogicBoard app
+homepage:     https://gitlab.com/hermanbergwerf/logicboard2
+environment:
+  sdk:        '>=1.8.0 <2.0.0'
+dependencies:
