@@ -6,3 +6,8 @@ homepage:     https://gitlab.com/hermanbergwerf/logicboard2
 environment:
   sdk:        '>=1.8.0 <2.0.0'
 dependencies:
+  flutter:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true

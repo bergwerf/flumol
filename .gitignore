@@ -1,3 +1,8 @@
+.flutter-plugins
+ios/.generated/
+local.properties
+.gradle
+
 #################
 # Linux.gitignore
 #################
@@ -77,4 +82,4 @@ doc/api/
 
 # Don't commit pubspec lock file
 # (Library packages only! Remove pattern if developing an application package)
-pubspec.lock
+#pubspec.lock
