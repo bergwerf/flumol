@@ -1,64 +1,61 @@
-// Copyright 2016 The Chromium Authors. All rights reserved.
+// Copyright 2015 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// This example shows how to perform a simple animation using the underlying
-// render tree.
+// This example shows how to perform a simple animation using the raw interface
+// to the engine.
 
 import 'dart:math' as math;
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 
-import 'package:flutter/animation.dart';
-import 'package:flutter/rendering.dart';
-import 'package:flutter/scheduler.dart';
+void renderFrame(Duration timestamp) {
+  // The timeStamp argument to beginFrame indicates the timing information we
+  // should use to clock our animations. It's important to use timeStamp rather
+  // than reading the system time because we want all the parts of the system to
+  // coordinate the timings of their animations. If each component read the
+  // system clock independently, the animations that we processed later would be
+  // slightly ahead of the animations we processed earlier.
 
-class NonStopVSync implements TickerProvider {
-  const NonStopVSync();
-  @override
-  Ticker createTicker(TickerCallback onTick) => new Ticker(onTick);
+  // PAINT
+
+  final ui.Rect paintBounds =
+      ui.Offset.zero & (ui.window.physicalSize / ui.window.devicePixelRatio);
+  final ui.PictureRecorder recorder = new ui.PictureRecorder();
+  final ui.Canvas canvas = new ui.Canvas(recorder, paintBounds);
+  canvas.translate(paintBounds.width / 2.0, paintBounds.height / 2.0);
+
+  // Here we determine the rotation according to the timeStamp given to us by
+  // the engine.
+  final double t =
+      timestamp.inMicroseconds / Duration.MICROSECONDS_PER_MILLISECOND / 1800.0;
+  canvas.rotate(math.PI * (t % 1.0));
+
+  canvas.drawRect(new ui.Rect.fromLTRB(-100.0, -100.0, 100.0, 100.0),
+      new ui.Paint()..color = const ui.Color.fromARGB(255, 255, 100, 0));
+  final ui.Picture picture = recorder.endRecording();
+
+  // COMPOSITE
+
+  final double devicePixelRatio = ui.window.devicePixelRatio;
+  final Float64List deviceTransform = new Float64List(16)
+    ..[0] = devicePixelRatio
+    ..[5] = devicePixelRatio
+    ..[10] = 1.0
+    ..[15] = 1.0;
+  final ui.SceneBuilder sceneBuilder = new ui.SceneBuilder()
+    ..pushTransform(deviceTransform)
+    ..addPicture(ui.Offset.zero, picture)
+    ..pop();
+  ui.window.render(sceneBuilder.build());
+
+  // After rendering the current frame of the animation, we ask the engine to
+  // schedule another frame. The engine will call beginFrame again when its time
+  // to produce the next frame.
+  ui.window.scheduleFrame();
 }
 
 void main() {
-  // We first create a render object that represents a green box.
-  final RenderBox green = new RenderDecoratedBox(
-      decoration: const BoxDecoration(color: const Color(0xFFFFFF00)));
-  // Second, we wrap that green box in a render object that forces the green box
-  // to have a specific size.
-  final RenderBox square = new RenderConstrainedBox(
-      additionalConstraints:
-          const BoxConstraints.tightFor(width: 200.0, height: 200.0),
-      child: green);
-  // Third, we wrap the sized green square in a render object that applies rotation
-  // transform before painting its child. Each frame of the animation, we'll
-  // update the transform of this render object to cause the green square to
-  // spin.
-  final RenderTransform spin = new RenderTransform(
-      transform: new Matrix4.identity(),
-      alignment: FractionalOffset.center,
-      child: square);
-  // Finally, we center the spinning green square...
-  final RenderBox root =
-      new RenderPositionedBox(alignment: FractionalOffset.center, child: spin);
-  // and attach it to the window.
-  new RenderingFlutterBinding(root: root);
-
-  // To make the square spin, we use an animation that repeats every 1800
-  // milliseconds.
-  final AnimationController animation = new AnimationController(
-    duration: const Duration(milliseconds: 1800),
-    vsync: const NonStopVSync(),
-  )..repeat();
-  // The animation will produce a value between 0.0 and 1.0 each frame, but we
-  // want to rotate the square using a value between 0.0 and math.PI. To change
-  // the range of the animation, we use a Tween.
-  final Tween<double> tween = new Tween<double>(begin: 0.0, end: math.PI);
-  // We add a listener to the animation, which will be called every time the
-  // animation ticks.
-  animation.addListener(() {
-    // This code runs every tick of the animation and sets a new transform on
-    // the "spin" render object by evaluating the tween on the current value
-    // of the animation. Setting this value will mark a number of dirty bits
-    // inside the render tree, which cause the render tree to repaint with the
-    // new transform value this frame.
-    spin.transform = new Matrix4.rotationZ(tween.evaluate(animation));
-  });
+  ui.window.onBeginFrame = renderFrame;
+  ui.window.scheduleFrame();
 }
