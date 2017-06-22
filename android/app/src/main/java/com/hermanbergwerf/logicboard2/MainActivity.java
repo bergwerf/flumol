@@ -1,4 +1,4 @@
-package com.hermanbergwerf.logicboard2;
+package com.hermanbergwerf.flumol;
 
 import android.os.Bundle;
 

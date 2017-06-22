@@ -24,7 +24,7 @@ android {
 
     defaultConfig {
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
-        applicationId "com.hermanbergwerf.logicboard2"
+        applicationId "com.hermanbergwerf.flumol"
     }
 
     buildTypes {
